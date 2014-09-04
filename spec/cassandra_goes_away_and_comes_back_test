@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+trap "exit 1" INT
+
+$(which brew 2>&1 > /dev/null)
+
+if [[ $? = "0" ]]
+then
+  start_cassandra="brew services start cassandra"
+  stop_cassandra="brew services stop cassandra"
+else
+  start_cassandra="sudo service cassandra start"
+  stop_cassandra="sudo service cassandra stop"
+fi
+
+run_rspec_times() {
+  for i in $(seq 1 100)
+  do
+    rspec --format doc
+  done
+}
+
+restart_cassandra() {
+  sleep 2
+  $stop_cassandra
+  rm -fr /usr/local/var/lib/cassandra/*
+  $start_cassandra
+}
+
+restart_cassandra &
+run_rspec_times

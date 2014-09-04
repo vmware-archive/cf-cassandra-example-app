@@ -1,0 +1,17 @@
+language: ruby
+
+rvm:
+- 2.0.0
+
+cache: bundler
+
+services:
+- cassandra
+
+before_install:
+- 'sudo perl -pi -e "s/(?<=authenticator: )AllowAllAuthenticator/PasswordAuthenticator/" /usr/local/cassandra/conf/cassandra.yaml'
+- 'sudo perl -pi -e "s/(?<=authorizer: )AllowAllAuthorizer/CassandraAuthorizer/" /usr/local/cassandra/conf/cassandra.yaml'
+- 'sudo service cassandra restart'
+- sleep 30
+
+script: bundle exec rspec

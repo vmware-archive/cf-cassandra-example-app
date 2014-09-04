@@ -1,4 +1,4 @@
-# Example Cassandra Application
+# Example Cassandra Application [![Build Status](https://travis-ci.org/pivotal-cf/cf-cassandra-example-app.svg)](https://travis-ci.org/pivotal-cf/cf-cassandra-example-app)
 
 This simple application illustrates the use of the Pivotal Cassandra data service in a Ruby application running on Pivotal Cloud Foundry.
 

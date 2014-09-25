@@ -1,15 +1,14 @@
 source 'https://rubygems.org'
 
-ruby '2.0.0'
+gem 'cf-app-utils', git: 'https://github.com/cloudfoundry/cf-app-utils-ruby.git'
 
-gem 'cql-rb', '~> 1.2.1'
-gem 'cf-app-utils', :git => 'https://github.com/cloudfoundry/cf-app-utils-ruby.git'
-gem 'sinatra', '~> 1.4.4'
-gem 'childprocess', '~> 0.5.3'
+gem 'cql-rb'
+gem 'sinatra'
+gem 'childprocess'
 
 group :test do
   gem 'guard-rspec'
   gem 'pry'
-  gem 'rspec', '~> 3.0.0.beta2'
+  gem 'rspec'
   gem 'faraday'
 end

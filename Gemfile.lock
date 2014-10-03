@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/cloudfoundry/cf-app-utils-ruby.git
-  revision: fa3b433ec1dcd5b7b738e3334ee17d3f3d1a0d9f
+  revision: 61c7bc646da83fd8f773e0f6ec121731b1d83119
   specs:
     cf-app-utils (0.3)
 
@@ -9,7 +9,7 @@ GEM
   specs:
     celluloid (0.16.0)
       timers (~> 4.0.0)
-    childprocess (0.5.3)
+    childprocess (0.5.5)
       ffi (~> 1.0, >= 1.0.11)
     coderay (1.1.0)
     cql-rb (2.0.3)
@@ -17,7 +17,7 @@ GEM
     diff-lcs (1.2.5)
     faraday (0.9.0)
       multipart-post (>= 1.2, < 3)
-    ffi (1.9.4)
+    ffi (1.9.5)
     formatador (0.2.5)
     guard (2.6.1)
       formatador (>= 0.2.4)
@@ -30,7 +30,7 @@ GEM
       rspec (>= 2.14, < 4.0)
     hitimes (1.2.2)
     ione (1.1.4)
-    listen (2.7.9)
+    listen (2.7.11)
       celluloid (>= 0.15.2)
       rb-fsevent (>= 0.9.3)
       rb-inotify (>= 0.9)
@@ -51,14 +51,14 @@ GEM
       rspec-core (~> 3.1.0)
       rspec-expectations (~> 3.1.0)
       rspec-mocks (~> 3.1.0)
-    rspec-core (3.1.4)
+    rspec-core (3.1.5)
       rspec-support (~> 3.1.0)
-    rspec-expectations (3.1.1)
+    rspec-expectations (3.1.2)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.1.0)
-    rspec-mocks (3.1.1)
+    rspec-mocks (3.1.2)
       rspec-support (~> 3.1.0)
-    rspec-support (3.1.0)
+    rspec-support (3.1.1)
     sinatra (1.4.5)
       rack (~> 1.4)
       rack-protection (~> 1.4)

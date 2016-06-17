@@ -1,6 +1,5 @@
 require "pry"
 require "securerandom"
-require "yaml"
 
 Dir.glob(File.expand_path('../support/*.rb', __FILE__), &method(:require))
 
@@ -13,5 +12,6 @@ RSpec.configure do |config|
 end
 
 def node_ips
-  @node_ips ||= YAML.load_file('spec/node_ips.yml')['node_ips']
+  nodes = ENV["NODE_IPS"] || "localhost"
+  @node_ips ||= nodes.split(",")
 end

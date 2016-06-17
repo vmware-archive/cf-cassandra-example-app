@@ -9,7 +9,7 @@ describe CassandraClient do
 
   let(:correct_connection_details) {
     {
-      "node_ips"      => %w[10.244.4.15],
+      "node_ips"      => node_ips,
       "username"      => "cassandra",
       "password"      => "cassandra",
     }
@@ -46,9 +46,11 @@ describe CassandraClient do
 
   describe "#create_table" do
     it "creates new table" do
-      expect(client.table_exists?("keyspace_name", "table_name")).to eql(false)
-      with_table("keyspace_name", "table_name") do
-        expect(client.table_exists?("keyspace_name", "table_name")).to eql(true)
+      with_keyspace("keyspace_name") do
+        expect(client.table_exists?("keyspace_name", "table_name")).to eql(false)
+        with_table("keyspace_name", "table_name") do
+          expect(client.table_exists?("keyspace_name", "table_name")).to eql(true)
+        end
       end
     end
 
@@ -139,7 +141,7 @@ describe CassandraClient do
     context "when connection details are not correct" do
       it "raises InvalidCassandraCredentialsException" do
         incorrect_credentials = {
-          'node_ips'      => %w[localhost],
+          'node_ips'      => node_ips,
           "username"      => "non_existent",
           "password"      => "invalid",
         }

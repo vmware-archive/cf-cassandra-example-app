@@ -16,7 +16,7 @@ class CassandraExampleApp
           "tags" => %w[cassandra pivotal],
           "plan" => "default",
           "credentials" => {
-            "node_ips" => %w[127.0.0.1],
+            "node_ips" => node_ips,
             "thrift_port" => 9160,
             "cql_port" => 9042,
             "keyspace_name" => "rspec_cf_cassandra_example_app",

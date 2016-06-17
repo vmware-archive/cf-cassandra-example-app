@@ -4,7 +4,8 @@ module CassandraTestEnvironment
   extend self
 
   def client
-    @client ||= Cql::Client.connect(credentials: { username: "cassandra", password: "cassandra" })
+    @client ||= Cql::Client.connect(credentials: { username: "cassandra", password: "cassandra" },
+                                    hosts: node_ips)
   rescue Cql::Io::ConnectionError
     puts "Cannot connect to Cassandra, is the Cassandra Server running?"
     exit 1

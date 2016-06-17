@@ -9,33 +9,57 @@ describe CassandraClient do
 
   let(:correct_connection_details) {
     {
-      "node_ips"      => %w[localhost],
-      "keyspace_name" => CassandraTestEnvironment.keyspace,
+      "node_ips"      => %w[10.244.4.15],
       "username"      => "cassandra",
       "password"      => "cassandra",
     }
   }
 
-  def with_table(table_name)
-    client.create_table(table_name)
+  def with_keyspace(keyspace_name)
+    client.create_keyspace(keyspace_name)
     yield
-    client.delete_table(table_name)
+    client.delete_keyspace(keyspace_name)
+  end
+
+  def with_table(keyspace_name, table_name)
+    client.create_table(keyspace_name, table_name)
+    yield
+    client.delete_keyspace(keyspace_name)
+  end
+
+  describe "#create_keyspace" do
+    it "creates new keyspace" do
+      expect(client.keyspace_exists?("rspeckeyspace")).to eql(false)
+      with_keyspace("rspeckeyspace") do
+        expect(client.keyspace_exists?("rspeckeyspace")).to eql(true)
+      end
+    end
+
+    context "when keyspace_name contains invalid characters" do
+      it "raises InvalidKeyspaceName" do
+        expect {
+          client.create_keyspace("5&@abc")
+        }.to raise_exception(InvalidKeyspaceName)
+      end
+    end
   end
 
   describe "#create_table" do
     it "creates new table" do
-      expect(client.table_exists?("rspec")).to eql(false)
-      with_table("rspec") do
-        expect(client.table_exists?("rspec")).to eql(true)
+      expect(client.table_exists?("keyspace_name", "table_name")).to eql(false)
+      with_table("keyspace_name", "table_name") do
+        expect(client.table_exists?("keyspace_name", "table_name")).to eql(true)
       end
     end
 
     context "when table_name is part of the CQL language" do
       it "creates new table" do
-        expect(client.table_exists?("table")).to eql(false)
+        with_keyspace("keyspace_name") do
+          expect(client.table_exists?("keyspace_name", "table")).to eql(false)
 
-        with_table("table") do
-          expect(client.table_exists?("table")).to eql(true)
+          with_table("keyspace_name", "table") do
+            expect(client.table_exists?("keyspace_name", "table")).to eql(true)
+          end
         end
       end
     end
@@ -43,52 +67,59 @@ describe CassandraClient do
     context "when table_name contains invalid characters" do
       it "raises InvalidTableName" do
         expect {
-          client.create_table("5&@abc")
+          client.create_keyspace("keyspace_name")
+          client.create_table("keyspace_name", "5&@abc")
         }.to raise_exception(InvalidTableName)
       end
     end
   end
 
-  describe "#delete_table" do
-    context "when table does not exist" do
+  describe "#delete_keyspace" do
+    context "when keyspace does not exist" do
       it "does not raise exception" do
-        random_table_name = SecureRandom.hex
-        expect { client.delete_table(random_table_name) }.to_not raise_exception
+        random_keyspace_name = SecureRandom.hex
+        expect { client.delete_keyspace(random_keyspace_name) }.to_not raise_exception
       end
     end
   end
 
   describe "#store & #fetch" do
     it "reads and writes keys into/from table" do
-      with_table("table") do
-        client.store(table_name: "table", key: "stored_key", value: "stored_value")
-        expect(client.fetch(table_name: "table", key: "stored_key")).to eql("stored_value")
+      with_keyspace("keyspace_name") do
+        with_table("keyspace_name", "table") do
+          client.store(keyspace_name: "keyspace_name", table_name: "table", key: "stored_key", value: "stored_value")
+          expect(client.fetch(keyspace_name: "keyspace_name", table_name: "table", key: "stored_key")).to eql("stored_value")
+        end
       end
     end
 
     context "when table does not exist" do
       it "raises TableDoesNotExistException" do
-        table_missing_exception = [
-          TableDoesNotExistException,
-          %{Table "inexistent_table" does not exist}
-        ]
-        
-        expect {
-          client.store(table_name: "inexistent_table", key: "stored_key", value: "stored_value")
-        }.to raise_exception(*table_missing_exception)
+        with_keyspace("keyspace_name") do
+          table_missing_exception = [
+            TableDoesNotExistException,
+            %{Table "non_existent_table" does not exist}
+          ]
 
-        expect {
-          client.fetch(table_name: "inexistent_table", key: "stored_key")
-        }.to raise_exception(*table_missing_exception)
+          expect {
+            client.store(keyspace_name: "keyspace_name", table_name: "non_existent_table", key: "stored_key", value: "stored_value")
+          }.to raise_exception(*table_missing_exception)
+
+          expect {
+            client.fetch(keyspace_name: "keyspace_name", table_name: "non_existent_table", key: "stored_key")
+          }.to raise_exception(*table_missing_exception)
+        end
       end
     end
 
     context "when key does not exist" do
       it "raises KeyNotFoundException" do
-        with_table("table") do
-          expect {
-            client.fetch(table_name: "table", key: "inexistent_key")
-          }.to raise_exception(KeyNotFoundException, %{"inexistent_key" key not found})
+        with_keyspace("keyspace_name") do
+          with_table("keyspace_name", "table") do
+            expect {
+              client.fetch(keyspace_name: "keyspace_name", table_name: "table", key: "non_existent_key")
+            }.to raise_exception(KeyNotFoundException, %{"non_existent_key" key not found})
+          end
         end
       end
     end
@@ -109,12 +140,11 @@ describe CassandraClient do
       it "raises InvalidCassandraCredentialsException" do
         incorrect_credentials = {
           'node_ips'      => %w[localhost],
-          "keyspace_name" => "system",
-          "username"      => "inexistent",
+          "username"      => "non_existent",
           "password"      => "invalid",
         }
 
-        expect { 
+        expect {
           CassandraClient.new(connection_details: incorrect_credentials).client
         }.to raise_exception(InvalidCassandraCredentialsException)
       end
@@ -124,7 +154,6 @@ describe CassandraClient do
       it "raises CassandraUnavailableException" do
         incorrect_cassandra_host = {
           'node_ips'            => %w[127.0.0.2],
-          "keyspace_name"       => "system",
           "username"            => "cassandra",
           "password"            => "cassandra",
           "connection_timeout"  => 0.1

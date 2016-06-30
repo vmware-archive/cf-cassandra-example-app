@@ -51,8 +51,8 @@ class CassandraExampleApp < Sinatra::Base
 
       You can run the following commands to create an instance and bind to it:
 
-        $ cf create-service cassandra default cassandra-instance
-        $ cf bind-service app-name cassandra-instance
+        $ cf create-service p-dse-cassandra single-node cassandra-instance
+        $ cf bind-service cassandra-example-app cassandra-instance
     }
   end
 

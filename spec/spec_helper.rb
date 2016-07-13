@@ -12,6 +12,6 @@ RSpec.configure do |config|
 end
 
 def node_ips
-  nodes = ENV["NODE_IPS"] || "localhost"
+  nodes = ENV["NODE_IPS"] || "127.0.0.1"
   @node_ips ||= nodes.split(",")
 end

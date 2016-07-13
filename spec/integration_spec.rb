@@ -21,7 +21,7 @@ describe "Cassandra Example app" do
       app_lifecycle(app: CassandraExampleApp.start_without_cassandra_binding) do
         response = app_client.post("/keyspace_name")
         expect(response.status).to eql(500)
-        expect(response.body).to include("cf bind-service app-name cassandra-instance")
+        expect(response.body).to include("cf bind-service cassandra-example-app cassandra-instance")
       end
     end
   end

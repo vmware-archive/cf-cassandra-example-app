@@ -127,9 +127,9 @@ describe CassandraClient do
     end
   end
 
-  describe "#client" do
+  describe "#session" do
     it "memoizes" do
-      expect(client.client).to eql(client.client)
+      expect(client.session).to eql(client.session)
     end
 
     context "when all the connection details are correct" do
@@ -147,7 +147,7 @@ describe CassandraClient do
         }
 
         expect {
-          CassandraClient.new(connection_details: incorrect_credentials).client
+          CassandraClient.new(connection_details: incorrect_credentials).session
         }.to raise_exception(InvalidCassandraCredentialsException)
       end
     end
@@ -162,7 +162,7 @@ describe CassandraClient do
         }
 
         expect {
-          CassandraClient.new(connection_details: incorrect_cassandra_host).client
+          CassandraClient.new(connection_details: incorrect_cassandra_host).session
         }.to raise_exception(CassandraUnavailableException)
       end
     end

@@ -1,4 +1,4 @@
-require 'cql'
+require 'cassandra'
 require 'forwardable'
 
 InvalidCassandraCredentialsException = Class.new(Exception)
@@ -11,37 +11,40 @@ KeyNotFoundException = Class.new(Exception)
 class CassandraClient < SimpleDelegator
   def initialize(args)
     @connection_details = args.fetch(:connection_details)
-    super(client)
+    super(session)
   end
 
-  def client
-    @client ||= Cql::Client.connect(remapped_connection_details)
-  rescue Cql::AuthenticationError => exception
-    raise(InvalidCassandraCredentialsException, exception)
-  rescue Cql::Io::ConnectionTimeoutError => exception
-    raise(CassandraUnavailableException, exception)
+  def cluster
+    @cluster = Cassandra.cluster(remapped_connection_details)
   end
+
+  def connected?
+    @session != nil
+  end
+
+  def session
+    @session ||= cluster.connect
+
+  rescue  Cassandra::Errors::AuthenticationError => exception
+     raise(InvalidCassandraCredentialsException, exception)
+  rescue Cassandra::Errors::NoHostsAvailable => exception
+     raise(CassandraUnavailableException, exception)
+  end
+
 
   def keyspace_exists?(keyspace_name)
-    query = %{
-      SELECT *
-      FROM system.schema_keyspaces
-      WHERE keyspace_name=?
-    }
-
-    result = client.prepare(query).execute(keyspace_name)
-    result.one?
+    cluster.has_keyspace? keyspace_name
   end
 
   def table_exists?(keyspace_name, table_name)
-    client.use(keyspace_name)
     query = %{
-      SELECT columnfamily_name
-      FROM system.schema_columnfamilies
-      WHERE keyspace_name=? AND columnfamily_name=?
+      SELECT table_name
+      FROM system_schema.tables
+      WHERE keyspace_name=? AND table_name=?
     }
 
-    result = client.prepare(query).execute(keyspace_name, table_name)
+    prepared_statement = session.prepare(query)
+    result = session.execute(prepared_statement, {arguments: [keyspace_name, table_name]})
     result.one?
   end
 
@@ -58,23 +61,22 @@ class CassandraClient < SimpleDelegator
       }
     }
 
-    client.execute(query)
+    session.execute(query)
   end
 
   def create_table(keyspace_name, table_name)
     raise InvalidTableName if table_name.index(/[^0-9a-z_]/i)
-    client.use(keyspace_name)
 
     return if table_exists?(keyspace_name, table_name)
 
     query = %{
-      CREATE TABLE "#{table_name}" (
+      CREATE TABLE "#{keyspace_name}"."#{table_name}" (
         id varchar PRIMARY KEY,
         value varchar
       )
     }
 
-    client.execute(query)
+    session.execute(query)
   end
 
   def delete_keyspace(keyspace_name)
@@ -84,7 +86,7 @@ class CassandraClient < SimpleDelegator
       DROP KEYSPACE "#{keyspace_name}"
     }
 
-    client.execute(query)
+    session.execute(query)
   end
 
   def store(args)
@@ -96,12 +98,12 @@ class CassandraClient < SimpleDelegator
     ensure_table_exists(keyspace_name, table_name)
 
     query = %{
-      INSERT INTO "#{table_name}" (id, value)
+      INSERT INTO "#{keyspace_name}"."#{table_name}" (id, value)
       VALUES (?, ?)
     }
 
-    client.use(keyspace_name)
-    client.prepare(query).execute(key, value)
+    statement = session.prepare(query)
+    session.execute(statement, {arguments: [key, value]})
   end
 
   def fetch(args)
@@ -113,12 +115,12 @@ class CassandraClient < SimpleDelegator
 
     query = %{
       SELECT value
-      FROM "#{table_name}"
+      FROM  "#{keyspace_name}"."#{table_name}"
       WHERE id=?
     }
 
-    client.use(keyspace_name)
-    result = client.prepare(query).execute(key)
+    statement = session.prepare(query)
+    result = session.execute(statement, {arguments: [key]})
 
     raise(KeyNotFoundException, %{"#{key}" key not found}) unless result.first
 
@@ -157,10 +159,9 @@ class CassandraClient < SimpleDelegator
 
   def remapped_connection_details
     {
-      credentials: {
+
         username: username,
         password: password,
-      },
       hosts: hosts,
       connection_timeout: connection_timeout,
     }
